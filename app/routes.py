@@ -26,7 +26,7 @@ async def run_service(
     with get_logger(task='docker service', request=request, service_name=image_name) as logger:
         try:
             logger.info(f'Starting service {service_name}')
-            if image_name in [service.image_aliases for service in SERVICES]:
+            if image_name in [alias for service in SERVICES for alias in service.image_aliases]:
                 service = next(service for service in SERVICES if image_name in service.image_aliases)
                 logger.info(f'Using existing service with nickname {service.nickname}')
                 if internal_port:
@@ -62,7 +62,7 @@ async def run_go_whatsapp_service(
                 service.name = service_name
                 service.main_external_port = external_port
             else:
-                if custom_image in [service.image_aliases for service in SERVICES]:
+                if custom_image in [alias for service in SERVICES for alias in service.image_aliases]:
                     service = next(service for service in SERVICES if custom_image in service.image_aliases)
                     logger.info(f'Using existing service with nickname {service.nickname}')
                     service.name = service_name

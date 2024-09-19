@@ -39,7 +39,7 @@ class DockerClient:
         Check if a docker service exists
         """
         try:
-            return name in [container.name for container in self.client.containers.list()]
+            return name in [container.attrs['Name'].replace('/', '') for container in self.client.containers.list()]
         except Exception as e:
             err_msg = f'Failed to check if service {name} exists'
             logger.exception(err_msg, task='docker client', args='')
@@ -79,9 +79,9 @@ class DockerClient:
         Check if a service meets the requirements to be started
         """
         try:
-            if not self.check_docker_port_allocated(port):
+            if self.check_docker_port_allocated(port):
                 raise ValueError(f'Port is already allocated')
-            if not self.check_docker_name_existence(image_name):
+            if self.check_docker_name_existence(image_name):
                 raise ValueError(f'Service already exists')
         except Exception as e:
             err_msg = f'Failed to check availability of service {image_name}'
