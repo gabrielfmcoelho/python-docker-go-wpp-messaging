@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Request, Response, Depends, HTTPException, status
+import uuid
 
 from .logger import get_logger
 from .docker_client import DockerClient, get_docker_client
@@ -27,6 +28,8 @@ async def run_service(
     with get_logger(task='docker service', request=request, service_name=image_name) as logger:
         try:
             logger.info(f'Starting service {service_name}')
+            uuid_sufix = uuid.uuid4().hex[:5]
+            service_name = f"{service_name}-{uuid_sufix}"
             if image_name in [alias for service in SERVICES for alias in service.image_aliases]:
                 service = next(service for service in SERVICES if image_name in service.image_aliases)
                 logger.info(f'Using existing service with nickname {service.nickname}')
@@ -44,8 +47,7 @@ async def run_service(
             docker_client.service_up(service)
         except Exception as e:
             logger.exception(f'Failed to start service')
-            status_code = status.HTTP_409_CONFLICT if 'Port is already allocated' in str(
-                e) or 'Service already exists' in str(e) else status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code = status.HTTP_409_CONFLICT if 'Port is already allocated' in str(e) or 'Service already exists' in str(e) else status.HTTP_500_INTERNAL_SERVER_ERROR
             raise HTTPException(status_code=status_code, detail=str(e))
 
 
@@ -56,30 +58,33 @@ async def run_go_whatsapp_service(
     custom_image: str = 'go-whatsapp-proxy',
     service_name: str = 'go-whatsapp-web-multidevice',
     external_port: int = 3000,
+    proxy_url: str = None,
+    webhook: str = None,
+    webhook_secret: str = None
 ):
     with get_logger(task='docker service', request=request, service_name=service_name) as logger:
         try:
             logger.info(f'Starting service {service_name}')
-            if not custom_image:
-                service = SERVICES[0]
-                service.name = service_name
-                service.main_external_port = external_port
+            if custom_image in [alias for service in SERVICES for alias in service.image_aliases]:
+                service = next(service for service in SERVICES if custom_image in service.image_aliases)
             else:
-                if custom_image in [alias for service in SERVICES for alias in service.image_aliases]:
-                    service = next(service for service in SERVICES if custom_image in service.image_aliases)
-                    # logger.info(f'Using existing service with nickname {service.nickname}')
-                    service.name = service_name
-                    service.main_external_port = external_port
-                else:
-                    raise ValueError(
-                        f'Image {custom_image} not found in repository')
+                raise ValueError(f'Image {custom_image} not found in repository')
+            uuid_sufix = uuid.uuid4().hex[:5]
+            service_name = f"{service_name}-{uuid_sufix}"
+            service.name = service_name
+            service.main_external_port = external_port
+            if proxy_url:
+                service.env["PROXY_URL"] = proxy_url
+            if webhook:
+                service.env["WEBHOOK"] = webhook
+                if webhook_secret:
+                    service.env["WEBHOOK_SECRET"] = webhook
+                logger.warning("No webhook secret provided")
             docker_client.service_up(service)
         except Exception as e:
             logger.exception(f'Failed to start service')
-            status_code = status.HTTP_409_CONFLICT if 'Port is already allocated' in str(
-                e) or 'Service already exists' in str(e) else status.HTTP_500_INTERNAL_SERVER_ERROR
-            status_code = status.HTTP_404_NOT_FOUND if 'Image' in str(
-                e) else status_code
+            status_code = status.HTTP_409_CONFLICT if 'Port is already allocated' in str(e) or 'Service already exists' in str(e) else status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code = status.HTTP_404_NOT_FOUND if 'Image' in str(e) else status_code
             raise HTTPException(status_code=status_code, detail=str(e))
 
 

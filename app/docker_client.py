@@ -84,22 +84,27 @@ class DockerClient:
             if self.check_docker_name_existence(image_name):
                 raise ValueError(f'Service already exists')
         except Exception as e:
-            err_msg = f'Failed to check availability of service {image_name}'
-            logger.exception(err_msg, task='docker client', args='')
-            raise ValueError(err_msg)
+            if e != 'Service already exists' and e != 'Port is already allocated':
+                err_msg = f'Failed to check availability of service {image_name}'
+                logger.exception(err_msg, task='docker client', args='')
+                raise ValueError(err_msg)
         
     def service_up(self, service: Service):
         """
         Start a service
         """
         try:
-            try:
-                self.check_avaliability(service.name, service.ports)
-            except Exception as e:
-                if 'Port is already allocated' in str(e) or 'Service already exists' in str(e):
-                    service.name = self.generate_available_name(service.name)
-                else:
-                    raise e
+            while True:
+                try:
+                    self.check_avaliability(service.name, service.ports)
+                    break
+                except Exception as e:
+                    if e == 'Port is already allocated':
+                        service.main_external_port += 1
+                    elif e == 'Service already exists':
+                        service.name = self.generate_available_name(service.name)
+                    else:
+                        raise e
             self.client.containers.run(service.image, name=service.name, ports=service.ports, environment=service.env, detach=True)
         except Exception as e:
             err_msg = f'Failed to start service {service.name}'
