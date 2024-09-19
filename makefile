@@ -1,5 +1,7 @@
-dependencies:
-    pip install -r requirements.txt
+.PHONY: dependencies run
 
-run-api:
-    python app/app.py
+dependencies:
+    python3 -m pip install -r requirements.txt
+
+run: dependencies
+    python3 -m uvicorn app.app:app --reload
