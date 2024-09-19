@@ -89,7 +89,7 @@ class LoggerHandler:
         self.log_spacers() if shutdown else None # pylint: disable=expression-not-assigned
 
     @logger.catch
-    def get_logs(self, log_file: str|None = None, last_n_lines: int = 10) -> list:
+    def get_logs(self, log_file: str = None, last_n_lines: int = 10) -> list:
         """
         Get the logs from the log file; by default, the last 10 lines and the current log file
         """

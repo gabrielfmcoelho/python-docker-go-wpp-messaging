@@ -18,7 +18,7 @@ async def run_service(
     image_name: str = 'aldinokemal2104/go-whatsapp-web-multidevice:latest',
     service_name: str = 'go-whatsapp-web-multidevice',
     external_port: int = 8080,
-    internal_port: int|None = None,
+    internal_port: int = None,
 ):
     """
     Start a service
@@ -50,7 +50,7 @@ async def run_service(
 async def run_go_whatsapp_service(
     request: Request,
     docker_client: DockerClient = Depends(get_docker_client),
-    custom_image: str|None = None,
+    custom_image: str = None,
     service_name: str = 'go-whatsapp-web-multidevice',
     external_port: int = 3000,
 ):

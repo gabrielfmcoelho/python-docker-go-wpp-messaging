@@ -8,8 +8,8 @@ class Service:
     main_external_port: int
     nickname: str = ''
     main_internal_port: int = 8080
-    env: dict|None = None
-    image_aliases: List[str]|None = None
+    env: dict = None
+    image_aliases: List[str] = None
 
     @property
     def ports(self):
