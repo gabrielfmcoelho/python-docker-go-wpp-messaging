@@ -133,7 +133,7 @@ async def list_service(
     with get_logger(task='docker service', request=request) as logger:
         try:
             logger.info(f'Searching for service')
-            return docker_client.clean_list_all_services(status)
+            return docker_client.list_services(status)
         except Exception as e:
             logger.exception(f'Failed to search for service')
             raise HTTPException(
@@ -150,7 +150,7 @@ async def list_service(
     with get_logger(task='docker service', request=request) as logger:
         try:
             logger.info(f'Searching for service')
-            containers = docker_client.list_services()
+            containers = docker_client.list_services(ServiceStatus.RUNNING)
             filtered_services = []
             instances = []
 
@@ -216,7 +216,7 @@ async def get_instance_status(
     with get_logger(task='docker service', request=request) as logger:
         try:
             logger.info(f'Searching for service: {instance_name}')
-            containers = docker_client.list_services()
+            containers = docker_client.list_services(ServiceStatus.RUNNING)
 
             for service in containers:
                 service_name = service['name']

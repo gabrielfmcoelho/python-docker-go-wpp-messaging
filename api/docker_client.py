@@ -165,7 +165,7 @@ class DockerClient:
                 'image': container.attrs['Config']['Image'],
             }
     
-    def clean_list_all_services(self, status: ServiceStatus):
+    def list_services(self, status: ServiceStatus):
         """
         List all services
         """
