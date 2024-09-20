@@ -157,7 +157,6 @@ class DockerClient:
             raise ValueError(err_msg)
         
     def get_service_info(self, container):
-            ic(container.attrs)
             return {
                 'dt_creation': container.attrs['Created'].split('.')[0],
                 'name': container.attrs['Name'].replace('/', ''),
