@@ -2,7 +2,7 @@ import docker
 from icecream import ic
 
 from .logger import logger
-from .schemas import Service
+from .schemas import Service, ServiceStatus
 
 
 class DockerClient:
@@ -26,7 +26,10 @@ class DockerClient:
         Create a new instance of the logger
         """
         try:
-            self.client = docker.from_env()
+            self.client = docker.DockerClient(
+                base_url='unix:///var/run/docker.sock'
+                #base_url='tcp://0.0.0.0:2375'
+                )
             with logger.contextualize(task='docker client', args=''):
                 logger.info('Docker client initialized successfully')
         except Exception as e:
@@ -153,28 +156,29 @@ class DockerClient:
             logger.exception(err_msg, task='docker client', args='')
             raise ValueError(err_msg)
         
-    def list_services(self, stopped: bool = False):
-        """
-        List all services
-        """
-        def get_service_info(container):
+    def get_service_info(self, container):
+            ic(container.attrs)
             return {
                 'dt_creation': container.attrs['Created'].split('.')[0],
                 'name': container.attrs['Name'].replace('/', ''),
-                'status': container.status,
+                'status': container.attrs['State']['Status'],
                 'ports': container.attrs['NetworkSettings']['Ports'],
                 'image': container.attrs['Config']['Image'],
             }
+    
+    def clean_list_all_services(self, status: ServiceStatus):
+        """
+        List all services
+        """
         try:
-            services = self.client.containers.list(all=True)
+            all = True if status == ServiceStatus.ALL or status == ServiceStatus.DOWN else False
+            services = self.client.containers.list(all=all)
             services_info = []
             for container in services:
-                container_status = container.status
-                if stopped and container_status != 'running':
-                    services_info.append(get_service_info(container))
-                elif not stopped and container_status == 'running':
-                    services_info.append(get_service_info(container))
-                return services_info
+                if status == ServiceStatus.DOWN and container.attrs['State']['Status'] == 'running':
+                    continue
+                services_info.append(self.get_service_info(container))
+            return services_info
         except Exception as e:
             err_msg = 'Failed to list services'
             logger.exception(err_msg, task='docker client', args='')

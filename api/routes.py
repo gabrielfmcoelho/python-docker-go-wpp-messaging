@@ -5,7 +5,7 @@ from .logger import get_logger
 from .docker_client import DockerClient, get_docker_client
 from .repository import SERVICES
 import requests
-from .schemas import Service
+from .schemas import Service, ServiceStatus
 
 router = APIRouter(
     prefix="/service",
@@ -125,7 +125,7 @@ async def stop_service(
 async def list_service(
     request: Request,
     docker_client: DockerClient = Depends(get_docker_client),
-    stopped: bool = False
+    status: ServiceStatus = ServiceStatus.ALL
 ):
     """
     Search for a service
@@ -133,7 +133,7 @@ async def list_service(
     with get_logger(task='docker service', request=request) as logger:
         try:
             logger.info(f'Searching for service')
-            return docker_client.list_services(stopped)
+            return docker_client.clean_list_all_services(status)
         except Exception as e:
             logger.exception(f'Failed to search for service')
             raise HTTPException(

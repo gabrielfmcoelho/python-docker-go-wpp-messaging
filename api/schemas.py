@@ -1,5 +1,11 @@
 from dataclasses import dataclass
+from enum import Enum
 from typing import List
+
+class ServiceStatus(Enum):
+    ALL = 'all'
+    RUNNING = 'running'
+    DOWN = 'down'
 
 @dataclass
 class Service:
