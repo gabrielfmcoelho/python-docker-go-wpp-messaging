@@ -17,7 +17,7 @@ class AppSettings(BaseSettings):
     LOCALE: str = 'pt_BR.UTF-8'
     PIDIGITAL_URL: str = ''
     BASE_URL: str = ''
-    PROJECT_NAME: str = 'api'
+    PROJECT_NAME: str = "WhatApp API Multi-instance docker manager"
     MODE: str = 'dev'
     APP_PORT: int = 8000
     VERSION: str = '0.1.0'

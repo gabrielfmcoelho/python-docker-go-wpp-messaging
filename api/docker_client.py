@@ -110,6 +110,23 @@ class DockerClient:
             err_msg = f'Failed to start service {service.name}'
             logger.exception(err_msg, task='docker client', args='')
             raise ValueError(err_msg)
+        
+    def service_restart(self, service_name: str):
+        """
+        Restart a service
+        """
+        try:
+            if self.check_docker_name_existence(service_name):
+                container = self.client.containers.get(service_name)
+                if container.status != 'running':
+                    container.start()
+                container.restart()
+            else:
+                raise ValueError(f'Service {service_name} does not exist')
+        except Exception as e:
+            err_msg = f'Failed to restart service {service_name}'
+            logger.exception(err_msg, task='docker client', args='')
+            raise ValueError(err_msg)
 
     def service_down(self, service_name: str):
         """
@@ -136,23 +153,28 @@ class DockerClient:
             logger.exception(err_msg, task='docker client', args='')
             raise ValueError(err_msg)
         
-    def list_services(self):
+    def list_services(self, stopped: bool = False):
         """
         List all services
         """
+        def get_service_info(container):
+            return {
+                'dt_creation': container.attrs['Created'].split('.')[0],
+                'name': container.attrs['Name'].replace('/', ''),
+                'status': container.status,
+                'ports': container.attrs['NetworkSettings']['Ports'],
+                'image': container.attrs['Config']['Image'],
+            }
         try:
-            services = self.client.containers.list()
-            services_info = [
-                {
-                    'dt_creation': container.attrs['Created'].split('.')[0],
-                    'name': container.attrs['Name'].replace('/', ''),
-                    'status': container.status,
-                    'ports': container.attrs['NetworkSettings']['Ports'],
-                    'image': container.attrs['Config']['Image'],
-                }
-                for container in services
-            ]
-            return services_info
+            services = self.client.containers.list(all=True)
+            services_info = []
+            for container in services:
+                container_status = container.status
+                if stopped and container_status != 'running':
+                    services_info.append(get_service_info(container))
+                elif not stopped and container_status == 'running':
+                    services_info.append(get_service_info(container))
+                return services_info
         except Exception as e:
             err_msg = 'Failed to list services'
             logger.exception(err_msg, task='docker client', args='')

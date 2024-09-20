@@ -13,7 +13,7 @@ router = APIRouter(
 )
 
 
-@router.post("/run")
+@router.post("/run", tags=["create"])
 async def run_service(
     request: Request,
     docker_client: DockerClient = Depends(get_docker_client),
@@ -51,7 +51,7 @@ async def run_service(
             raise HTTPException(status_code=status_code, detail=str(e))
 
 
-@router.get("/go-whatsapp/run")
+@router.post("/go-whatsapp/run", tags=["create"])
 async def run_go_whatsapp_service(
     request: Request,
     docker_client: DockerClient = Depends(get_docker_client),
@@ -88,25 +88,22 @@ async def run_go_whatsapp_service(
             raise HTTPException(status_code=status_code, detail=str(e))
 
 
-@router.get("/list")
-async def list_service(
+@router.post("/go-whatsapp/restart", tags=["manage containers"])
+async def restart_go_whatsapp_service(
     request: Request,
     docker_client: DockerClient = Depends(get_docker_client),
+    service_name: str = 'go-whatsapp-web-multidevice',
 ):
-    """
-    Search for a service
-    """
-    with get_logger(task='docker service', request=request) as logger:
+    with get_logger(task='docker service', request=request, service_name=service_name) as logger:
         try:
-            logger.info(f'Searching for service')
-            return docker_client.list_services()
+            logger.info(f'Restarting service {service_name}')
+            docker_client.service_restart(service_name)
         except Exception as e:
-            logger.exception(f'Failed to search for service')
+            logger.exception(f'Failed to restart service')
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-
-
-@router.get("/stop")
+        
+@router.post("/stop", tags=["manage containers"])
 async def stop_service(
     request: Request,
     service_name: str,
@@ -123,9 +120,26 @@ async def stop_service(
             logger.exception(f'Failed to stop service')
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        
+@router.get("/list", tags=["monitore containers"])
+async def list_service(
+    request: Request,
+    docker_client: DockerClient = Depends(get_docker_client),
+    stopped: bool = False
+):
+    """
+    Search for a service
+    """
+    with get_logger(task='docker service', request=request) as logger:
+        try:
+            logger.info(f'Searching for service')
+            return docker_client.list_services(stopped)
+        except Exception as e:
+            logger.exception(f'Failed to search for service')
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
-
-@router.get("/fetchInstances")
+@router.get("/fetchInstances", tags=["monitore whatapp"])
 async def list_service(
     request: Request,
     docker_client: DockerClient = Depends(get_docker_client),
@@ -190,7 +204,7 @@ async def list_service(
             raise
 
 
-@router.get("/fetchInstance/{instance_name}")
+@router.get("/fetchInstance/{instance_name}", tags=["monitore whatapp"])
 async def get_instance_status(
     instance_name: str,
     request: Request,
