@@ -51,7 +51,7 @@ async def run_service(
             raise HTTPException(status_code=status_code, detail=str(e))
 
 
-@router.post("/go-whatsapp/run", tags=["create"])
+@router.get("/go-whatsapp/run", tags=["create"])
 async def run_go_whatsapp_service(
     request: Request,
     docker_client: DockerClient = Depends(get_docker_client),
