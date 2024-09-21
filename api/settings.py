@@ -1,6 +1,7 @@
 from typing import List
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from datetime import datetime as dt
+from hashlib import sha256
 import os
 import logging
 
@@ -25,6 +26,7 @@ class AppSettings(BaseSettings):
     CORS_ALLOW_CREDENTIALS: bool = True
     CORS_ALLOW_METHODS: str = 'GET, POST, PUT, DELETE, OPTIONS'
     CORS_ALLOW_HEADERS: str = '*'
+    SECURITY_TOKEN: str = '123'
 
     def __init__(self, **data):
         super().__init__(**data)
@@ -90,6 +92,11 @@ class AppSettings(BaseSettings):
     @property
     def allowed_headers(self):
         return self.CORS_ALLOW_HEADERS.split(',')
+    
+    @property
+    def security_token(self):
+        token = sha256(self.SECURITY_TOKEN.encode()).hexdigest()
+        return token
 
 app_settings = AppSettings()
 

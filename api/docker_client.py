@@ -108,7 +108,7 @@ class DockerClient:
                         service.name = self.generate_available_name(service.name)
                     else:
                         raise e
-            self.client.containers.run(service.image, name=service.name, ports=service.ports, environment=service.env, detach=True)
+            self.client.containers.run(service.image, name=service.name, ports=service.ports, environment=service.env, detach=True, restart_policy={'Name': 'always'})
         except Exception as e:
             err_msg = f'Failed to start service {service.name}'
             logger.exception(err_msg, task='docker client', args='')

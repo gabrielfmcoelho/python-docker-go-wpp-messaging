@@ -1,19 +1,36 @@
 from fastapi import APIRouter, Request, Response, Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from hashlib import sha256
+import requests
 import uuid
 
 from .logger import get_logger
 from .docker_client import DockerClient, get_docker_client
 from .repository import SERVICES
-import requests
 from .schemas import Service, ServiceStatus
+from .settings import app_settings as settings
 
 router = APIRouter(
     prefix="/service",
     tags=["service"],
 )
 
+security = HTTPBearer()
 
-@router.post("/run", tags=["create"])
+# Função para validar o token
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    #print(f'Token received: {credentials.credentials}')
+    #token_received_hash = sha256(credentials.credentials.encode()).hexdigest()
+    token_received_hash = credentials.credentials # Token já deve vir em hash
+    print(f'Token received hash: {token_received_hash}')
+    if token_received_hash != settings.security_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or missing token",
+        )
+
+
+@router.post("/run", tags=["create"], dependencies=[Depends(verify_token)])
 async def run_service(
     request: Request,
     docker_client: DockerClient = Depends(get_docker_client),
@@ -51,7 +68,7 @@ async def run_service(
             raise HTTPException(status_code=status_code, detail=str(e))
 
 
-@router.get("/go-whatsapp/run", tags=["create"])
+@router.get("/go-whatsapp/run", tags=["create"], dependencies=[Depends(verify_token)])
 async def run_go_whatsapp_service(
     request: Request,
     docker_client: DockerClient = Depends(get_docker_client),
@@ -88,7 +105,7 @@ async def run_go_whatsapp_service(
             raise HTTPException(status_code=status_code, detail=str(e))
 
 
-@router.post("/go-whatsapp/restart", tags=["manage containers"])
+@router.post("/go-whatsapp/restart", tags=["manage containers"], dependencies=[Depends(verify_token)])
 async def restart_go_whatsapp_service(
     request: Request,
     docker_client: DockerClient = Depends(get_docker_client),
@@ -103,7 +120,7 @@ async def restart_go_whatsapp_service(
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
         
-@router.post("/stop", tags=["manage containers"])
+@router.post("/stop", tags=["manage containers"], dependencies=[Depends(verify_token)])
 async def stop_service(
     request: Request,
     service_name: str,
@@ -121,7 +138,7 @@ async def stop_service(
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
         
-@router.get("/list", tags=["monitore containers"])
+@router.get("/list", tags=["monitore containers"], dependencies=[Depends(verify_token)])
 async def list_service(
     request: Request,
     docker_client: DockerClient = Depends(get_docker_client),
@@ -139,7 +156,7 @@ async def list_service(
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
-@router.get("/fetchInstances", tags=["monitore whatapp"])
+@router.get("/fetchInstances", tags=["monitore whatapp"], dependencies=[Depends(verify_token)])
 async def list_service(
     request: Request,
     docker_client: DockerClient = Depends(get_docker_client),
@@ -204,7 +221,7 @@ async def list_service(
             raise
 
 
-@router.get("/fetchInstance/{instance_name}", tags=["monitore whatapp"])
+@router.get("/fetchInstance/{instance_name}", tags=["monitore whatapp"], dependencies=[Depends(verify_token)])
 async def get_instance_status(
     instance_name: str,
     request: Request,
