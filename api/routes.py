@@ -30,7 +30,7 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
         )
 
 
-@router.post("/run", tags=["create"], dependencies=[Depends(verify_token)])
+@router.post("/run", tags=["create"])
 async def run_service(
     request: Request,
     docker_client: DockerClient = Depends(get_docker_client),
@@ -68,7 +68,7 @@ async def run_service(
             raise HTTPException(status_code=status_code, detail=str(e))
 
 
-@router.get("/go-whatsapp/run", tags=["create"], dependencies=[Depends(verify_token)], description=f"""
+@router.get("/go-whatsapp/run", tags=["create"], description=f"""
     Start instances of whatsapp web automation api. 
 
     * When starting an api with proxy option, by default it will applied a random proxy port based on {settings.default_proxy_url}. 
@@ -114,7 +114,7 @@ async def run_go_whatsapp_service(
             raise HTTPException(status_code=status_code, detail=str(e))
 
 
-@router.post("/go-whatsapp/restart", tags=["manage containers"], dependencies=[Depends(verify_token)])
+@router.post("/go-whatsapp/restart", tags=["manage containers"])
 async def restart_go_whatsapp_service(
     request: Request,
     docker_client: DockerClient = Depends(get_docker_client),
@@ -129,7 +129,7 @@ async def restart_go_whatsapp_service(
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
         
-@router.post("/stop", tags=["manage containers"], dependencies=[Depends(verify_token)])
+@router.post("/stop", tags=["manage containers"])
 async def stop_service(
     request: Request,
     service_name: str,
@@ -147,7 +147,7 @@ async def stop_service(
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
         
-@router.get("/list", tags=["monitore containers"], dependencies=[Depends(verify_token)])
+@router.get("/list", tags=["monitore containers"])
 async def list_service(
     request: Request,
     docker_client: DockerClient = Depends(get_docker_client),
