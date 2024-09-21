@@ -1,5 +1,10 @@
-from .schemas import Service
-    
+import random
+
+def generate_proxy_url():
+    port = random.randint(10000, 11000)
+    proxy_url = f"http://0b0a288b055c448171f1__cr.br;state.maranhao:46ecbec34ae82226@gw.dataimpulse.com:{port}"
+    return proxy_url
+
 SERVICES = [
     Service(
         nickname='go-whatsapp-web-multidevice',
@@ -12,7 +17,7 @@ SERVICES = [
                 'BASIC_AUTH': 'disparador:2024',
                 'PORT': 3000,
                 'DEBUG': 'False',
-                'AUTOREPLY': 'Obrigado por entrar em contato.',
+                'AUTOREPLY': 'Obrigado por enviar mensagem.',
                 'WEBHOOK': 'http://localhost:3000',
                 'WEBHOOK_SECRET': 'secret',
             },
@@ -28,10 +33,11 @@ SERVICES = [
                 'OS_NAME': 'Chrome',
                 'PORT': 3000,
                 'DEBUG': 'False',
-                'AUTOREPLY': 'Obrigado por entrar em contato.',
-                'PROXY_URL': 'socks5://0b0a288b055c448171f1__cr.br:46ecbec34ae82226@gw.dataimpulse.com:823',
+                'AUTOREPLY': 'Obrigado por enviar mensagem.',
+                'PROXY_URL': generate_proxy_url(),
                 'WEBHOOK': 'http://localhost:3000',
             },
         image_aliases=['go-whatsapp-proxy'],
     ),
 ]
+
