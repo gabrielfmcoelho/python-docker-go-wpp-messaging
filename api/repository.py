@@ -1,4 +1,5 @@
 import random
+from .schemas import Service
 
 def generate_proxy_url():
     port = random.randint(10000, 11000)
