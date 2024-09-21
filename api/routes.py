@@ -80,8 +80,8 @@ async def run_go_whatsapp_service(
     docker_client: DockerClient = Depends(get_docker_client),
     custom_image: ServiceImage = ServiceImage.GO_WPP_WITH_PROXY,
     service_name: str = "nickname",
-    custom_external_port: int = None,
-    custom_proxy_url: str = None,
+    external_port: int = None,
+    proxy_url: str = None,
     webhook: str = None,
     webhook_secret: str = None,
     autoreply: str = 'Obrigado por enviar mensagem.',
@@ -91,14 +91,14 @@ async def run_go_whatsapp_service(
             logger.info(f'Starting service {service_name}')
             service = next(service for service in SERVICES if service.image == custom_image.value)
             service.name = f"go-whatsapp-web-multidevice-{service_name}-{uuid.uuid4().hex[:5]}"
-            if custom_external_port:
-                if not docker_client.check_docker_port_allocated(custom_external_port):
-                    raise ValueError(f'Port {custom_external_port} is already allocated')
-                service.main_external_port = custom_external_port
+            if external_port:
+                if not docker_client.check_docker_port_allocated(external_port):
+                    raise ValueError(f'Port {external_port} is already allocated')
+                service.main_external_port = external_port
             else:
                 service.main_external_port = docker_client.generate_random_available_port()
             if custom_image == ServiceImage.GO_WPP_WITH_PROXY:
-                service.env['PROXY_URL'] = custom_proxy_url if custom_proxy_url else docker_client.generate_custom_proxy_port()
+                service.env['PROXY_URL'] = proxy_url if proxy_url else docker_client.generate_custom_proxy_port()
             if webhook:
                 service.env["WEBHOOK"] = webhook
                 if webhook_secret:
