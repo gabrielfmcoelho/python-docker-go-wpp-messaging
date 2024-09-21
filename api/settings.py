@@ -27,6 +27,7 @@ class AppSettings(BaseSettings):
     CORS_ALLOW_METHODS: str = 'GET, POST, PUT, DELETE, OPTIONS'
     CORS_ALLOW_HEADERS: str = '*'
     SECURITY_TOKEN: str = '123'
+    DEFAULT_PROXY_URL: str = 'http://localhost:8000'
 
     def __init__(self, **data):
         super().__init__(**data)
@@ -97,6 +98,10 @@ class AppSettings(BaseSettings):
     def security_token(self):
         token = sha256(self.SECURITY_TOKEN.encode()).hexdigest()
         return token
+    
+    @property
+    def default_proxy_url(self):
+        return self.DEFAULT_PROXY_URL
 
 app_settings = AppSettings()
 

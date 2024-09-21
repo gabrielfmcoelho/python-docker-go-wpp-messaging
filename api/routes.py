@@ -7,7 +7,7 @@ import uuid
 from .logger import get_logger
 from .docker_client import DockerClient, get_docker_client
 from .repository import SERVICES
-from .schemas import Service, ServiceStatus
+from .schemas import Service, ServiceStatus, ServiceImage
 from .settings import app_settings as settings
 
 router = APIRouter(
@@ -22,7 +22,7 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     #print(f'Token received: {credentials.credentials}')
     #token_received_hash = sha256(credentials.credentials.encode()).hexdigest()
     token_received_hash = credentials.credentials # Token já deve vir em hash
-    print(f'Token received hash: {token_received_hash}')
+    #print(f'Token received hash: {token_received_hash}')
     if token_received_hash != settings.security_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -68,35 +68,43 @@ async def run_service(
             raise HTTPException(status_code=status_code, detail=str(e))
 
 
-@router.get("/go-whatsapp/run", tags=["create"], dependencies=[Depends(verify_token)])
+@router.get("/go-whatsapp/run", tags=["create"], dependencies=[Depends(verify_token)], description=f"""
+    Start instances of whatsapp web automation api. 
+
+    * When starting an api with proxy option, by default it will applied a random proxy port based on {settings.default_proxy_url}. 
+    * Every service name will have the prefix 'go-whatsapp-web-multidevice-' and a random uuid sufix, Like service name: davi -> 'go-whatsapp-web-multidevice-davi-129213'.
+    * If a custom external port is not provided it will generate a random available port.
+    """)
 async def run_go_whatsapp_service(
     request: Request,
     docker_client: DockerClient = Depends(get_docker_client),
-    custom_image: str = 'go-whatsapp-proxy',
-    service_name: str = 'go-whatsapp-web-multidevice',
-    external_port: int = 3000,
-    proxy_url: str = None,
+    custom_image: ServiceImage = ServiceImage.GO_WPP_WITH_PROXY,
+    service_name: str = "nickname",
+    custom_external_port: int = None,
+    custom_proxy_url: str = None,
     webhook: str = None,
-    webhook_secret: str = None
+    webhook_secret: str = None,
+    autoreply: str = 'Obrigado por enviar mensagem.',
 ):
     with get_logger(task='docker service', request=request, service_name=service_name) as logger:
         try:
             logger.info(f'Starting service {service_name}')
-            if custom_image in [alias for service in SERVICES for alias in service.image_aliases]:
-                service = next(service for service in SERVICES if custom_image in service.image_aliases)
+            service = next(service for service in SERVICES if service.image == custom_image.value)
+            service.name = f"go-whatsapp-web-multidevice-{service_name}-{uuid.uuid4().hex[:5]}"
+            if custom_external_port:
+                if not docker_client.check_docker_port_allocated(custom_external_port):
+                    raise ValueError(f'Port {custom_external_port} is already allocated')
+                service.main_external_port = custom_external_port
             else:
-                raise ValueError(f'Image {custom_image} not found in repository')
-            uuid_sufix = uuid.uuid4().hex[:5]
-            service_name = f"{service_name}-{uuid_sufix}"
-            service.name = service_name
-            service.main_external_port = external_port
-            if proxy_url:
-                service.env["PROXY_URL"] = proxy_url
+                service.main_external_port = docker_client.generate_random_available_port()
+            if custom_image == ServiceImage.GO_WPP_WITH_PROXY:
+                service.env['PROXY_URL'] = custom_proxy_url if custom_proxy_url else docker_client.generate_custom_proxy_port()
             if webhook:
                 service.env["WEBHOOK"] = webhook
                 if webhook_secret:
-                    service.env["WEBHOOK_SECRET"] = webhook
+                    service.env["WEBHOOK_SECRET"] = webhook_secret
                 logger.warning("No webhook secret provided")
+            service.env["AUTOREPLY"] = autoreply
             docker_client.service_up(service)
         except Exception as e:
             logger.exception(f'Failed to start service')

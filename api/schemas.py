@@ -7,6 +7,10 @@ class ServiceStatus(Enum):
     RUNNING = 'running'
     DOWN = 'down'
 
+class ServiceImage(Enum):
+    GO_WPP_WITH_PROXY = 'go-whatsapp-proxy'
+    GO_WPP_ORIGINAL = 'aldinokemal2104/go-whatsapp-web-multidevice:latest'
+
 @dataclass
 class Service:
     image: str

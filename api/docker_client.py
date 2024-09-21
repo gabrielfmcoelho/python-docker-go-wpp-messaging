@@ -1,8 +1,10 @@
 import docker
 from icecream import ic
+import random
 
 from .logger import logger
 from .schemas import Service, ServiceStatus
+from .settings import app_settings as settings
 
 
 class DockerClient:
@@ -97,18 +99,14 @@ class DockerClient:
         Start a service
         """
         try:
-            while True:
-                try:
-                    self.check_avaliability(service.name, service.ports)
-                    break
-                except Exception as e:
-                    if e == 'Port is already allocated':
-                        service.main_external_port += 1
-                    elif e == 'Service already exists':
-                        service.name = self.generate_available_name(service.name)
-                    else:
-                        raise e
-            self.client.containers.run(service.image, name=service.name, ports=service.ports, environment=service.env, detach=True, restart_policy={'Name': 'always'})
+            self.client.containers.run(
+                service.image,
+                name=service.name,
+                ports=service.ports,
+                environment=service.env,
+                detach=True,
+                restart_policy={'Name': 'always'}
+                )
         except Exception as e:
             err_msg = f'Failed to start service {service.name}'
             logger.exception(err_msg, task='docker client', args='')
@@ -157,13 +155,22 @@ class DockerClient:
             raise ValueError(err_msg)
         
     def get_service_info(self, container):
-            return {
-                'dt_creation': container.attrs['Created'].split('.')[0],
-                'name': container.attrs['Name'].replace('/', ''),
-                'status': container.attrs['State']['Status'],
-                'ports': container.attrs['NetworkSettings']['Ports'],
-                'image': container.attrs['Config']['Image'],
-            }
+        return {
+            'dt_creation': container.attrs['Created'].split('.')[0],
+            'name': container.attrs['Name'].replace('/', ''),
+            'status': container.attrs['State']['Status'],
+            'ports': container.attrs['NetworkSettings']['Ports'],
+            'image': container.attrs['Config']['Image'],
+        }
+    
+    def get_used_ports(self):
+        running_services_info = self.list_services(ServiceStatus.RUNNING)
+        ports = []
+        for service in running_services_info:
+            for port in service['ports']:
+                if service['ports'][port] is not None:
+                    ports.append(service['ports'][port][0]['HostPort'])
+        return ports
     
     def list_services(self, status: ServiceStatus):
         """
@@ -180,6 +187,49 @@ class DockerClient:
             return services_info
         except Exception as e:
             err_msg = 'Failed to list services'
+            logger.exception(err_msg, task='docker client', args='')
+            raise ValueError(err_msg)
+        
+    def check_port_availability(self, port):
+        """
+        Check if a port is available
+        """
+        try:
+            return str(port) not in self.get_used_ports()
+        except Exception as e:
+            err_msg = f'Failed to check if port {port} is available'
+            logger.exception(err_msg, task='docker client', args='')
+            raise ValueError(err_msg)
+        
+    def generate_random_available_port(self):
+        """
+        Generate a random available port
+        """
+        try:
+            range_start = 3000
+            range_end = 4000
+            port = range_start
+            while True:
+                if self.check_port_availability(port):
+                    return port
+                port += 1
+                if port > range_end:
+                    raise ValueError('No available ports')
+        except Exception as e:
+            err_msg = 'Failed to generate a random available port'
+            logger.exception(err_msg, task='docker client', args='')
+            raise ValueError(err_msg)
+        
+    def generate_custom_proxy_port(self):
+        """
+        Generate a custom proxy port
+        """
+        try:
+            random_port = random.randint(10000, 11000)
+            proxy_url = settings.default_proxy_url + f':{random_port}'
+            return proxy_url
+        except Exception as e:
+            err_msg = 'Failed to generate a custom proxy port'
             logger.exception(err_msg, task='docker client', args='')
             raise ValueError(err_msg)
         
