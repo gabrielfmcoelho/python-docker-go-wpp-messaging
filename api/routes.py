@@ -93,7 +93,8 @@ async def run_go_whatsapp_service(
             service.name = f"go-whatsapp-web-multidevice-{service_name}-{uuid.uuid4().hex[:5]}"
             if external_port:
                 if not docker_client.check_docker_port_allocated(external_port):
-                    raise ValueError(f'Port {external_port} is already allocated')
+                    logger.warning(f'Port {external_port} is already allocated')
+                    external_port = docker_client.generate_random_available_port()
                 service.main_external_port = external_port
             else:
                 service.main_external_port = docker_client.generate_random_available_port()
