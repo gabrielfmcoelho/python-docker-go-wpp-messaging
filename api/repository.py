@@ -1,4 +1,3 @@
-
 from .schemas import Service
 
 SERVICES = [
