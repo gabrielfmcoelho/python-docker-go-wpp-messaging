@@ -165,7 +165,7 @@ async def list_service(
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
-@router.get("/fetchInstances", tags=["monitore whatapp"], dependencies=[Depends(verify_token)])
+@router.get("/fetchInstances", tags=["monitore whatapp"])
 async def list_service(
     request: Request,
     docker_client: DockerClient = Depends(get_docker_client),
@@ -230,7 +230,7 @@ async def list_service(
             raise
 
 
-@router.get("/fetchInstance/{instance_name}", tags=["monitore whatapp"], dependencies=[Depends(verify_token)])
+@router.get("/fetchInstance/{instance_name}", tags=["monitore whatapp"])
 async def get_instance_status(
     instance_name: str,
     request: Request,
