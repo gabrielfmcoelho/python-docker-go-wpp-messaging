@@ -24,7 +24,7 @@ SERVICES = [
         env={
                 'OS_NAME': 'Chrome',
                 'PORT': 3000,
-                'DEBUG': 'False',
+                'DEBUG': 'True',
             },
         image_aliases=['go-whatsapp-proxy'],
     ),
